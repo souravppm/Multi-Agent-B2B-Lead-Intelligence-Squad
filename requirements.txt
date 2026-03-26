@@ -1,0 +1,9 @@
+langchain
+langgraph
+langchain-community
+ollama
+python-dotenv
+tavily-python
+firecrawl-py
+pydantic
+streamlit
