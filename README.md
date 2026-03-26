@@ -24,9 +24,9 @@ The pipeline leverages a directed State Graph, enabling seamless intelligence tr
 This project is built using bleeding-edge AI and data engineering technologies:
 
 - **Orchestration:** [LangGraph](https://python.langchain.com/docs/langgraph) (Stateful multi-agent pipelines)
-- **Local Inference:** `Llama-3` via [Ollama](https://ollama.com/) — *Optimized to run locally on an NVIDIA RTX 4060 using advanced model quantization.*
+- **Local Inference:** `Llama-3` via [Ollama](https://ollama.com/) — *Uses the dedicated `langchain-ollama` library for enhanced performance and stability on an NVIDIA RTX 4060.*
 - **Search Engine:** [Tavily API](https://tavily.com/) (AI-optimized advanced web search)
-- **Web Scraping:** [Firecrawl API](https://www.firecrawl.dev/) (LLM-ready markdown extraction)
+- **Web Scraping:** [Firecrawl API](https://www.firecrawl.dev/) — *Compatible with Firecrawl SDK v4+ for robust markdown extraction.*
 - **Frontend / UI:** [Streamlit](https://streamlit.io/) (Interactive, real-time tracking interface)
 
 ## Installation & Setup
