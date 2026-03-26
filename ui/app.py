@@ -1,9 +1,14 @@
 import streamlit as st
 import sys
 import os
+from dotenv import load_dotenv
 
 # Ensure src module is accessible when running from terminal
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(root_dir)
+
+# Explicitly load .env from the root directory FIRST
+load_dotenv(os.path.join(root_dir, '.env'))
 
 from src.graph import app, LeadGraphState
 

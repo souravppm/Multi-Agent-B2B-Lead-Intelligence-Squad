@@ -1,6 +1,7 @@
 langchain
 langgraph
 langchain-community
+langchain-ollama
 ollama
 python-dotenv
 tavily-python

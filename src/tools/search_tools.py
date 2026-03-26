@@ -15,4 +15,16 @@ def search_company_news(company_name):
 
 def scrape_website(url):
     """Scrape and clean website content into Markdown."""
-    return firecrawl.scrape_url(url, params={'formats': ['markdown']})
+    try:
+        # The new SDK uses scrape() instead of scrape_url()
+        result = firecrawl.scrape(url, formats=['markdown'])
+        
+        # In newer versions, it returns a Document object. We need to extract the markdown text safely
+        if hasattr(result, 'markdown'):
+            return result.markdown
+        elif isinstance(result, dict):
+            return result.get('markdown', str(result))
+            
+        return str(result)
+    except Exception as e:
+        return f"Firecrawl Error: {str(e)}"

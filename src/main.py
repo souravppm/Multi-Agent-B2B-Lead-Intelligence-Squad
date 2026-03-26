@@ -1,4 +1,11 @@
 import sys
+import os
+from dotenv import load_dotenv
+
+# Explicitly load .env from the project root FIRST
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+load_dotenv(os.path.join(root_dir, '.env'))
+
 from src.graph import app, LeadGraphState
 
 def main():
