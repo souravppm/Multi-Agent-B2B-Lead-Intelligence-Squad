@@ -133,8 +133,29 @@ def main():
         st.header("📩 Final Email Draft")
         email = st.session_state.result.get("email_draft")
         if email:
-            st.subheader(f"Subject: {email.subject_line}")
-            st.markdown(f"```text\n{email.email_body}\n```")
+            # Professional Subject Line
+            st.markdown(f"### 📬 **Subject:** {email.subject_line}")
+            
+            # Premium styled card for the email body (avoids horizontal scroll)
+            body_html = email.email_body.replace('\n', '<br>')
+            st.markdown(f"""
+                <div style="
+                    background-color: #121212; 
+                    padding: 2.5rem; 
+                    border-radius: 15px; 
+                    border-left: 5px solid #ff4b4b;
+                    color: #ffffff; 
+                    font-size: 1.1rem;
+                    line-height: 1.7;
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+                    margin: 1.5rem 0;
+                    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                    white-space: normal;
+                    word-wrap: break-word;
+                ">
+                    {body_html}
+                </div>
+            """, unsafe_allow_html=True)
         else:
             st.warning("No email draft generated.")
         
