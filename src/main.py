@@ -34,7 +34,9 @@ def main():
             company_url=company_url,
             research_data=None,
             pain_points=None,
-            email_draft=None
+            email_draft=None,
+            feedback=None,
+            revision_count=0
         )
 
         logger.info("[SYSTEM] Invoking LangGraph Pipeline (Thread ID: 1)...\n")

@@ -69,7 +69,9 @@ def main():
                 company_url=company_url,
                 research_data=None,
                 pain_points=None,
-                email_draft=None
+                email_draft=None,
+                feedback=None,
+                revision_count=0
             )
 
             # Execution happens here (Researcher + Analyst)
@@ -138,11 +140,14 @@ def main():
             # ⚖️ Display Judge Evaluation
             if eval_data:
                 st.markdown(f"### ⚖️ **AI Judge Evaluation**")
-                col_score, col_feedback = st.columns([1, 4])
+                col_score, col_rev, col_feedback = st.columns([1, 1, 3])
                 with col_score:
                     st.metric("Quality Score", f"{eval_data.score}/10")
+                with col_rev:
+                    st.metric("Revisions", st.session_state.result.get("revision_count", 0))
                 with col_feedback:
                     st.info(f"**Feedback:** {eval_data.feedback}")
+
             
             st.divider()
             
