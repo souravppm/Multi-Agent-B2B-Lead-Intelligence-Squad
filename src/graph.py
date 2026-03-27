@@ -1,8 +1,16 @@
+import logging
 from typing import TypedDict, Optional
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 
 from src.utils.schemas import ResearchOutput, AnalysisOutput, EmailOutput
+
+# ==========================================
+# 0. Configure Logging
+# ==========================================
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # ==========================================
 # 1. Define the Graph State
@@ -21,7 +29,7 @@ class LeadGraphState(TypedDict):
 # Temperature 0.2 rakhchi jate model basi banie kotha na bole (hallucinate na kore).
 llm = ChatOllama(model="llama3", temperature=0.2) 
 
-print("LLM and State Initialized successfully.")
+logger.info("LLM and State Initialized successfully.")
 
 from langchain_core.messages import SystemMessage, HumanMessage
 # Nicher import gulo tomar folder structure onujayi asbe
@@ -34,7 +42,7 @@ from src.tools.search_tools import search_company_news, scrape_website
 
 def researcher_node(state: LeadGraphState):
     """Researcher Agent: Scrapes web and summarizes company data."""
-    print("--- [AGENT] Researcher is working... ---")
+    logger.info("--- [AGENT] Researcher is working... ---")
     company = state["company_name"]
     url = state["company_url"]
     
@@ -43,7 +51,7 @@ def researcher_node(state: LeadGraphState):
         search_results = search_company_news(company)
         website_data = scrape_website(url)
     except Exception as e:
-        print(f"Tool Error: {e}")
+        logger.error(f"Tool Error: {e}")
         search_results = "Could not fetch news."
         website_data = "Could not fetch website."
 
@@ -63,7 +71,7 @@ def researcher_node(state: LeadGraphState):
 
 def analyst_node(state: LeadGraphState):
     """Analyst Agent: Finds pain points from research data."""
-    print("--- [AGENT] Analyst is analyzing pain points... ---")
+    logger.info("--- [AGENT] Analyst is analyzing pain points... ---")
     research_data = state["research_data"]
     
     # Convert Pydantic object to string context for next LLM
@@ -82,7 +90,7 @@ def analyst_node(state: LeadGraphState):
 
 def copywriter_node(state: LeadGraphState):
     """Copywriter Agent: Drafts the final email."""
-    print("--- [AGENT] Copywriter is drafting the email... ---")
+    logger.info("--- [AGENT] Copywriter is drafting the email... ---")
     company = state["company_name"]
     pain_points = state["pain_points"]
     
@@ -100,7 +108,7 @@ def copywriter_node(state: LeadGraphState):
     return {"email_draft": response} # Update State
 
 # ==========================================
-# 4. Build and Compile the Graph
+# 4. Build and Compile the Graph (with HITL & Persistence)
 # ==========================================
 
 workflow = StateGraph(LeadGraphState)
@@ -116,6 +124,9 @@ workflow.add_edge("researcher", "analyst")
 workflow.add_edge("analyst", "copywriter")
 workflow.add_edge("copywriter", END)
 
-# Compile the pipeline
-app = workflow.compile()
-print("Graph compiled successfully!")
+# Initialize Memory Checkpointer
+memory = MemorySaver()
+
+# Compile the pipeline with Human-in-the-Loop interrupt
+app = workflow.compile(checkpointer=memory, interrupt_before=["copywriter"])
+logger.info("Graph compiled successfully with Persistence and HITL Interrupt.")

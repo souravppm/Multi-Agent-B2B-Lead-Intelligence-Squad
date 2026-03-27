@@ -9,11 +9,17 @@
 
 **Multi-Agent B2B Lead Intelligence Squad** is an autonomous AI agent pipeline designed to streamline and automate B2B outbound sales efforts. Powered by **LangGraph**, it orchestrates a team of specialized AI agents to research a target company, analyze its strategic pain points, and draft a highly personalized, context-aware cold email. 
 
-By utilizing local LLMs and autonomous web scraping, the system delivers high-quality, actionable sales intelligence with zero hallucination and robust privacy.
+By utilizing local LLMs, autonomous web scraping, and **Human-in-the-Loop (HITL)** oversight, the system delivers high-quality, actionable sales intelligence with zero hallucination and robust privacy.
+
+### Key Features 🚀
+- **Human-in-the-Loop (HITL):** Manual approval step after analysis to ensure 100% email quality before drafting.
+- **State Persistence:** Built-in `MemorySaver` checkpointer for session-based autonomous workflows.
+- **Structured Logging:** Production-ready traceability using Python's standard logging module.
+- **Strictly Typed Outputs:** Pydantic-validated data exchange between all agents.
 
 ## System Architecture
 
-The pipeline leverages a directed State Graph, enabling seamless intelligence transfer between three autonomous nodes:
+The pipeline leverages a directed StateGraph with **checkpointing**, enabling seamless intelligence transfer and manual interrupts:
 
 1. **🕵️‍♂️ Researcher Node:** Given a company name and URL, it uses the Tavily Search API and Firecrawl to scrape recent news (last 6-12 months) and technology stack data. It processes and structures the raw data into actionable intelligence.
 2. **🧠 Analyst Node:** Ingests the Researcher's formatted data to identify three distinct, strategic "Pain Points" the target company is currently facing, explaining exactly *why* these pose a friction or business risk.
