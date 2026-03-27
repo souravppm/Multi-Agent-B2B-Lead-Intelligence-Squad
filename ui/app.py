@@ -42,9 +42,9 @@ def main():
             initial_state = LeadGraphState(
                 company_name=company_name,
                 company_url=company_url,
-                research_data="",
-                pain_points="",
-                email_draft=""
+                research_data=None,
+                pain_points=None,
+                email_draft=None
             )
 
             # Visually show progress using st.status
@@ -62,7 +62,8 @@ def main():
                 st.header("📩 Generated Email Draft")
                 email_draft = result.get("email_draft")
                 if email_draft:
-                    st.markdown(f"```text\n{email_draft}\n```")
+                    st.subheader(f"Subject: {email_draft.subject_line}")
+                    st.markdown(f"```text\n{email_draft.email_body}\n```")
                 else:
                     st.warning("No email draft generated.")
                     
@@ -72,12 +73,24 @@ def main():
                 # Hidden reasoning using expanders
                 col1, col2 = st.columns(2)
                 with col1:
-                    with st.expander("🕵️‍♂️ Researcher Output (Raw Intel)", expanded=False):
-                        st.write(result.get("research_data", "No data available."))
+                    with st.expander("🕵️‍♂️ Researcher Output (Company Intel)", expanded=False):
+                        res = result.get("research_data")
+                        if res:
+                            st.write(f"**Summary:** {res.company_summary}")
+                            st.write("**Recent News:**")
+                            for news in res.recent_news:
+                                st.write(f"- {news}")
+                        else:
+                            st.write("No data available.")
                         
                 with col2:
                     with st.expander("🧠 Analyst Output (Pain Points)", expanded=False):
-                        st.write(result.get("pain_points", "No pain points identified."))
+                        analysis = result.get("pain_points")
+                        if analysis:
+                            for point in analysis.pain_points:
+                                st.write(f"🎯 {point}")
+                        else:
+                            st.write("No pain points identified.")
                         
             except Exception as e:
                 st.error(f"An error occurred during execution: {e}")

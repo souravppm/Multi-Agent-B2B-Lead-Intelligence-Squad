@@ -1,3 +1,16 @@
+# Environments
 venv/
+env/
 .env
+
+# Python specific
 __pycache__/
+*.pyc
+*.pyo
+
+# IDEs
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/

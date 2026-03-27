@@ -2,6 +2,8 @@ from typing import TypedDict, Optional
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 
+from src.utils.schemas import ResearchOutput, AnalysisOutput, EmailOutput
+
 # ==========================================
 # 1. Define the Graph State
 # Eta holo amader system-er memory ba pipeline data.
@@ -9,9 +11,9 @@ from langgraph.graph import StateGraph, END
 class LeadGraphState(TypedDict):
     company_name: str
     company_url: str
-    research_data: Optional[str]
-    pain_points: Optional[str]
-    email_draft: Optional[str]
+    research_data: Optional[ResearchOutput]
+    pain_points: Optional[AnalysisOutput]
+    email_draft: Optional[EmailOutput]
 
 # ==========================================
 # 2. Initialize the Local LLM (RTX 4060 Optimized)
@@ -53,8 +55,10 @@ def researcher_node(state: LeadGraphState):
         HumanMessage(content=raw_data)
     ]
     
-    response = llm.invoke(messages)
-    return {"research_data": response.content} # Update State
+    # Use Structured Output via Pydantic
+    structured_llm = llm.with_structured_output(ResearchOutput)
+    response = structured_llm.invoke(messages)
+    return {"research_data": response} # Update State
 
 
 def analyst_node(state: LeadGraphState):
@@ -62,13 +66,18 @@ def analyst_node(state: LeadGraphState):
     print("--- [AGENT] Analyst is analyzing pain points... ---")
     research_data = state["research_data"]
     
+    # Convert Pydantic object to string context for next LLM
+    context = research_data.model_dump_json() if research_data else "No data"
+    
     messages = [
         SystemMessage(content=ANALYST_PROMPT),
-        HumanMessage(content=f"Here is the structured research data:\n{research_data}")
+        HumanMessage(content=f"Here is the structured research data:\n{context}")
     ]
     
-    response = llm.invoke(messages)
-    return {"pain_points": response.content} # Update State
+    # Use Structured Output via Pydantic
+    structured_llm = llm.with_structured_output(AnalysisOutput)
+    response = structured_llm.invoke(messages)
+    return {"pain_points": response} # Update State
 
 
 def copywriter_node(state: LeadGraphState):
@@ -77,13 +86,18 @@ def copywriter_node(state: LeadGraphState):
     company = state["company_name"]
     pain_points = state["pain_points"]
     
+    # Convert Pydantic object to string context for next LLM
+    context = pain_points.model_dump_json() if pain_points else "No pain points"
+    
     messages = [
         SystemMessage(content=COPYWRITER_PROMPT),
-        HumanMessage(content=f"Target Company: {company}\nIdentified Pain Points:\n{pain_points}")
+        HumanMessage(content=f"Target Company: {company}\nIdentified Pain Points:\n{context}")
     ]
     
-    response = llm.invoke(messages)
-    return {"email_draft": response.content} # Update State
+    # Use Structured Output via Pydantic
+    structured_llm = llm.with_structured_output(EmailOutput)
+    response = structured_llm.invoke(messages)
+    return {"email_draft": response} # Update State
 
 # ==========================================
 # 4. Build and Compile the Graph

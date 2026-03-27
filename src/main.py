@@ -27,9 +27,9 @@ def main():
         initial_state = LeadGraphState(
             company_name=company_name,
             company_url=company_url,
-            research_data="",
-            pain_points="",
-            email_draft=""
+            research_data=None,
+            pain_points=None,
+            email_draft=None
         )
 
         print("[SYSTEM] Invoking LangGraph Pipeline...\n")
@@ -44,7 +44,9 @@ def main():
         # Extract and print the final email_draft from the resulting state
         email_draft = result.get("email_draft")
         if email_draft:
-            print(email_draft)
+            print(f"Subject: {email_draft.subject_line}")
+            print("-" * 30)
+            print(email_draft.email_body)
         else:
             print("No email draft was generated.")
             
