@@ -12,18 +12,22 @@
 By utilizing local LLMs, autonomous web scraping, and **Human-in-the-Loop (HITL)** oversight, the system delivers high-quality, actionable sales intelligence with zero hallucination and robust privacy.
 
 ### Key Features 🚀
-- **Human-in-the-Loop (HITL):** Manual approval step after analysis to ensure 100% email quality before drafting.
-- **State Persistence:** Built-in `MemorySaver` checkpointer for session-based autonomous workflows.
-- **Structured Logging:** Production-ready traceability using Python's standard logging module.
-- **Strictly Typed Outputs:** Pydantic-validated data exchange between all agents.
+- **⚖️ LLM-as-a-Judge (Reflection Loop):** Every email draft is evaluated by a "Judge" LLM. If the score is below 8/10, the system triggers an automatic re-draft with specific feedback for refinement (Max 2 iterations).
+- **⚡ Concurrency Optimization:** Uses `ThreadPoolExecutor` to execute I/O-bound tasks (Search & Scraping) in parallel, drastically reducing overall latency.
+- **🙋‍♂️ Human-in-the-Loop (HITL):** A manual approval step after analysis ensures 100% quality and alignment before the final draft is verified.
+- **🔄 State Persistence:** Built-in `MemorySaver` checkpointer for session-based autonomous workflows and state recovery.
+- **🎯 Strictly Typed Structured Outputs:** Pydantic-validated data exchange between all agents using `.with_structured_output()`.
+- **📜 Structured Logging:** Production-ready traceability using Python's standard logging module (INFO level).
 
 ## System Architecture
 
-The pipeline leverages a directed StateGraph with **checkpointing**, enabling seamless intelligence transfer and manual interrupts:
+The pipeline leverages a directed **StateGraph** with conditional loops, enabling autonomous reflection and manual interrupts:
 
-1. **🕵️‍♂️ Researcher Node:** Given a company name and URL, it uses the Tavily Search API and Firecrawl to scrape recent news (last 6-12 months) and technology stack data. It processes and structures the raw data into actionable intelligence.
-2. **🧠 Analyst Node:** Ingests the Researcher's formatted data to identify three distinct, strategic "Pain Points" the target company is currently facing, explaining exactly *why* these pose a friction or business risk.
-3. **✍️ Copywriter Node:** Receives the strategic analysis and drafts a hyper-personalized, high-converting cold email. It mentions a specific recent news item and addresses an identified pain point with a subtle solution—strictly avoiding generic templates or buzzwords perfectly suited for enterprise decision-makers.
+1. **🕵️‍♂️ Researcher Node:** Concurrently fetches market news (Tavily) and technology stack (Firecrawl).
+2. **🧠 Analyst Node:** Identifies three strategic "Pain Points" and business risks based on the research.
+3. **✍️ Copywriter Node:** Drafts a hyper-personalized cold email and incorporates feedback if a revision is needed.
+4. **⚖️ Evaluator Node:** Judges the email draft's quality and assigns a score and feedback, deciding whether to route back for refinement or proceed to completion.
+
 
 ## Tech Stack
 
