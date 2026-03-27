@@ -85,6 +85,12 @@ def researcher_node(state: LeadGraphState):
     # Use Structured Output via Pydantic
     structured_llm = llm.with_structured_output(ResearchOutput)
     response = structured_llm.invoke(messages)
+    
+    # Fallback to prevent downstream failures
+    if response is None:
+        logger.warning("[FALLBACK] Researcher failed to return structured data.")
+        response = ResearchOutput(company_summary="Research failed to summarize.", recent_news=[])
+        
     return {"research_data": response} # Update State
 
 
@@ -104,6 +110,12 @@ def analyst_node(state: LeadGraphState):
     # Use Structured Output via Pydantic
     structured_llm = llm.with_structured_output(AnalysisOutput)
     response = structured_llm.invoke(messages)
+    
+    # Fallback
+    if response is None:
+        logger.warning("[FALLBACK] Analyst failed to return pain points.")
+        response = AnalysisOutput(pain_points=["General efficiency improvements", "Process optimization"])
+        
     return {"pain_points": response} # Update State
 
 
@@ -145,6 +157,14 @@ def copywriter_node(state: LeadGraphState):
     structured_llm = llm.with_structured_output(EmailOutput)
     response = structured_llm.invoke(messages)
     
+    # Fallback
+    if response is None:
+        logger.warning("[FALLBACK] Copywriter failed to return a draft.")
+        response = EmailOutput(
+            subject_line="Connect with us", 
+            email_body="Hi,\n\nI'd love to connect and discuss how we can help your business.\n\nBest regards."
+        )
+    
     # Increment Revision Count
     new_rev_count = state.get("revision_count", 0) + 1
     
@@ -169,6 +189,14 @@ def evaluator_node(state: LeadGraphState):
     structured_llm = llm.with_structured_output(EvaluationOutput)
     response = structured_llm.invoke(messages)
     
+    # Fallback if local model fails to parse JSON or returns None
+    if response is None:
+        logger.warning("AI Judge failed to return structured output. Using fallback.")
+        response = EvaluationOutput(
+            score=5, 
+            feedback="AI Judge failed to format the response properly due to local model limitations. Please review the draft manually."
+        )
+    
     return {"evaluation": response, "feedback": response.feedback}
 
 
@@ -182,7 +210,11 @@ def route_evaluation(state: LeadGraphState):
     rev_count = state.get("revision_count", 0)
     
     # Logic: Approve if score is 8+ OR if we've reached max revisions (2)
-    if evaluation and evaluation.score >= 8:
+    if not evaluation:
+        logger.warning("--- [ROUTER] Evaluation missing. Defaulting to END. ---")
+        return "end"
+        
+    if evaluation.score >= 8:
         logger.info(f"--- [ROUTER] Score: {evaluation.score}/10 (Approved) ---")
         return "end"
     elif rev_count >= 2:
