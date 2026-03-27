@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from src.utils.schemas import ResearchOutput, AnalysisOutput, EmailOutput
+from src.utils.schemas import ResearchOutput, AnalysisOutput, EmailOutput, EvaluationOutput
 
 # ==========================================
 # 0. Configure Logging
