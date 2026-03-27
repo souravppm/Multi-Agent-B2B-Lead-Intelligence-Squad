@@ -1,5 +1,6 @@
 import logging
 from typing import TypedDict, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -41,19 +42,33 @@ from src.tools.search_tools import search_company_news, scrape_website
 # ==========================================
 
 def researcher_node(state: LeadGraphState):
-    """Researcher Agent: Scrapes web and summarizes company data."""
+    """Researcher Agent: Scrapes web and summarizes company data concurrently."""
     logger.info("--- [AGENT] Researcher is working... ---")
     company = state["company_name"]
     url = state["company_url"]
     
-    # 1. Use Tools (Error handling rakha valo, but MVP er jonno simple rakhchi)
-    try:
-        search_results = search_company_news(company)
-        website_data = scrape_website(url)
-    except Exception as e:
-        logger.error(f"Tool Error: {e}")
-        search_results = "Could not fetch news."
-        website_data = "Could not fetch website."
+    # Concurrent execution for Search and Scrape
+    search_results = ""
+    website_data = ""
+    
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = {
+            executor.submit(search_company_news, company): "search",
+            executor.submit(scrape_website, url): "scrape"
+        }
+        
+        for future in as_completed(futures):
+            task_name = futures[future]
+            try:
+                result = future.result()
+                if task_name == "search":
+                    search_results = result
+                else:
+                    website_data = result
+            except Exception as e:
+                logger.error(f"Error in {task_name} task: {e}")
+                if task_name == "search": search_results = "Search failed."
+                else: website_data = "Scrape failed."
 
     # 2. Combine data and ask LLM to extract key info
     raw_data = f"Company: {company}\nURL: {url}\n\nSearch Data:\n{search_results}\n\nWebsite Data:\n{website_data}"
