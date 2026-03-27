@@ -132,7 +132,20 @@ def main():
         st.divider()
         st.header("📩 Final Email Draft")
         email = st.session_state.result.get("email_draft")
+        eval_data = st.session_state.result.get("evaluation")
+        
         if email:
+            # ⚖️ Display Judge Evaluation
+            if eval_data:
+                st.markdown(f"### ⚖️ **AI Judge Evaluation**")
+                col_score, col_feedback = st.columns([1, 4])
+                with col_score:
+                    st.metric("Quality Score", f"{eval_data.score}/10")
+                with col_feedback:
+                    st.info(f"**Feedback:** {eval_data.feedback}")
+            
+            st.divider()
+            
             # Professional Subject Line
             st.markdown(f"### 📬 **Subject:** {email.subject_line}")
             

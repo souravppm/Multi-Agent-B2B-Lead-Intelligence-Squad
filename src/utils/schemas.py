@@ -14,3 +14,8 @@ class EmailOutput(BaseModel):
     """Schema for the Copywriter Agent's output."""
     subject_line: str = Field(description="A catchy but professional subject line")
     email_body: str = Field(description="The full body of the personalized cold email")
+
+class EvaluationOutput(BaseModel):
+    """Schema for the Evaluator Agent's output (LLM-as-a-Judge)."""
+    score: int = Field(description="Quality score from 1 to 10", ge=1, le=10)
+    feedback: str = Field(description="Detailed feedback on how to improve the email if the score is low")

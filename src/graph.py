@@ -23,6 +23,8 @@ class LeadGraphState(TypedDict):
     research_data: Optional[ResearchOutput]
     pain_points: Optional[AnalysisOutput]
     email_draft: Optional[EmailOutput]
+    evaluation: Optional[EvaluationOutput] # Added for Reflection Loop
+
 
 # ==========================================
 # 2. Initialize the Local LLM (RTX 4060 Optimized)
@@ -34,7 +36,7 @@ logger.info("LLM and State Initialized successfully.")
 
 from langchain_core.messages import SystemMessage, HumanMessage
 # Nicher import gulo tomar folder structure onujayi asbe
-from src.agents.prompts import RESEARCHER_PROMPT, ANALYST_PROMPT, COPYWRITER_PROMPT
+from src.agents.prompts import RESEARCHER_PROMPT, ANALYST_PROMPT, COPYWRITER_PROMPT, EVALUATOR_PROMPT
 from src.tools.search_tools import search_company_news, scrape_website
 
 # ==========================================
@@ -105,16 +107,17 @@ def analyst_node(state: LeadGraphState):
 
 def copywriter_node(state: LeadGraphState):
     """Copywriter Agent: Drafts the final email."""
-    logger.info("--- [AGENT] Copywriter is drafting the email... ---")
+    logger.info("--- [AGENT] Copywriter is drafting/refining the email... ---")
     company = state["company_name"]
     pain_points = state["pain_points"]
+    feedback = state.get("evaluation").feedback if state.get("evaluation") else "No previous feedback."
     
     # Convert Pydantic object to string context for next LLM
     context = pain_points.model_dump_json() if pain_points else "No pain points"
     
     messages = [
         SystemMessage(content=COPYWRITER_PROMPT),
-        HumanMessage(content=f"Target Company: {company}\nIdentified Pain Points:\n{context}")
+        HumanMessage(content=f"Target Company: {company}\nIdentified Pain Points:\n{context}\n\nPrevious Review Feedback:\n{feedback}")
     ]
     
     # Use Structured Output via Pydantic
@@ -122,8 +125,37 @@ def copywriter_node(state: LeadGraphState):
     response = structured_llm.invoke(messages)
     return {"email_draft": response} # Update State
 
+def evaluator_node(state: LeadGraphState):
+    """Evaluator Agent: Judges the quality of the email draft."""
+    logger.info("--- [AGENT] Evaluator (Judge) is reviewing the draft... ---")
+    email_draft = state["email_draft"]
+    
+    messages = [
+        SystemMessage(content=EVALUATOR_PROMPT),
+        HumanMessage(content=f"Subject: {email_draft.subject_line}\n\nBody: {email_draft.email_body}")
+    ]
+    
+    # Use Structured Output for Evaluation
+    structured_llm = llm.with_structured_output(EvaluationOutput)
+    response = structured_llm.invoke(messages)
+    return {"evaluation": response}
+
 # ==========================================
-# 4. Build and Compile the Graph (with HITL & Persistence)
+# 4. Define Conditional Logic (Should Continue?)
+# ==========================================
+
+def should_continue(state: LeadGraphState):
+    """Router to decide if we need more reflection or if we are done."""
+    evaluation = state["evaluation"]
+    if evaluation and evaluation.score >= 8:
+        logger.info(f"--- [ROUTER] Quality Score: {evaluation.score}/10. Approved! ---")
+        return "end"
+    else:
+        logger.info(f"--- [ROUTER] Quality Score: {evaluation.score}/10. Needs Improvement. ---")
+        return "refine"
+
+# ==========================================
+# 5. Build and Compile the Graph (with Reflection Loop)
 # ==========================================
 
 workflow = StateGraph(LeadGraphState)
@@ -132,16 +164,29 @@ workflow = StateGraph(LeadGraphState)
 workflow.add_node("researcher", researcher_node)
 workflow.add_node("analyst", analyst_node)
 workflow.add_node("copywriter", copywriter_node)
+workflow.add_node("evaluator", evaluator_node)
 
 # Add edges (Set the flow)
 workflow.set_entry_point("researcher")
 workflow.add_edge("researcher", "analyst")
 workflow.add_edge("analyst", "copywriter")
-workflow.add_edge("copywriter", END)
+workflow.add_edge("copywriter", "evaluator")
+
+# Add conditional edge for Reflection
+workflow.add_conditional_edges(
+    "evaluator",
+    should_continue,
+    {
+        "end": END,
+        "refine": "copywriter"
+    }
+)
 
 # Initialize Memory Checkpointer
 memory = MemorySaver()
 
 # Compile the pipeline with Human-in-the-Loop interrupt
+# Note: interrupt_before stays on copywriter so the HUMAN can approve the final reflection result if needed
 app = workflow.compile(checkpointer=memory, interrupt_before=["copywriter"])
-logger.info("Graph compiled successfully with Persistence and HITL Interrupt.")
+logger.info("Graph compiled successfully with Reflection Loop and HITL.")
+
