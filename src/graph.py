@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import TypedDict, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_ollama import ChatOllama
@@ -32,7 +33,11 @@ class LeadGraphState(TypedDict):
 # 2. Initialize the Local LLM (RTX 4060 Optimized)
 # ==========================================
 # Temperature 0.2 rakhchi jate model basi banie kotha na bole (hallucinate na kore).
-llm = ChatOllama(model="llama3", temperature=0.2) 
+llm = ChatOllama(
+    model="llama3", 
+    temperature=0.2,
+    base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+) 
 
 logger.info("LLM and State Initialized successfully.")
 
